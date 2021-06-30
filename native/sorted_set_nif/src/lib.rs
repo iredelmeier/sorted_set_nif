@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate rustler;
-#[macro_use]
 extern crate lazy_static;
 
 mod bucket;
@@ -17,25 +16,25 @@ use std::sync::Mutex;
 use supported_term::SupportedTerm;
 
 mod atoms {
-    rustler_atoms! {
+    atoms! {
         // Common Atoms
-        atom ok;
-        atom error;
+        ok,
+        error,
 
         // Resource Atoms
-        atom bad_reference;
-        atom lock_fail;
+        bad_reference,
+        lock_fail,
 
         // Success Atoms
-        atom added;
-        atom duplicate;
-        atom removed;
+        added,
+        duplicate,
+        removed,
 
         // Error Atoms
-        atom unsupported_type;
-        atom not_found;
-        atom index_out_of_bounds;
-        atom max_bucket_size_exceeded;
+        unsupported_type,
+        not_found,
+        index_out_of_bounds,
+        max_bucket_size_exceeded,
     }
 }
 
@@ -69,30 +68,13 @@ pub enum AppendBucketResult {
     MaxBucketSizeExceeded,
 }
 
-rustler_export_nifs! {
-    "Elixir.Discord.SortedSet.NifBridge",
-    [
-        ("add", 2, add),
-        ("append_bucket", 2, append_bucket),
-        ("at", 2, at),
-        ("debug", 1, debug),
-        ("empty", 2, empty),
-        ("find_index", 2, find_index),
-        ("new", 2, new),
-        ("remove", 2, remove),
-        ("size", 1, size),
-        ("slice", 3, slice),
-        ("to_list", 1, to_list),
-    ],
-    Some(load)
-}
-
 fn load(env: Env, _info: Term) -> bool {
-    resource_struct_init!(SortedSetResource, env);
+    resource!(SortedSetResource, env);
     true
 }
 
-fn empty<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn empty<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let initial_item_capacity: usize = args[0].decode()?;
     let max_bucket_size: usize = args[1].decode()?;
 
@@ -110,7 +92,8 @@ fn empty<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     Ok((atoms::ok(), resource).encode(env))
 }
 
-fn new<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn new<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let initial_item_capacity: usize = args[0].decode()?;
     let max_bucket_size: usize = args[1].decode()?;
 
@@ -126,7 +109,8 @@ fn new<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     Ok((atoms::ok(), resource).encode(env))
 }
 
-fn append_bucket<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn append_bucket<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
@@ -150,7 +134,8 @@ fn append_bucket<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     }
 }
 
-fn add<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn add<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
@@ -172,7 +157,8 @@ fn add<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     }
 }
 
-fn remove<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn remove<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
@@ -194,7 +180,8 @@ fn remove<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     }
 }
 
-fn size<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn size<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
@@ -208,7 +195,8 @@ fn size<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     Ok(set.size().encode(env))
 }
 
-fn to_list<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn to_list<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
@@ -222,7 +210,27 @@ fn to_list<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     Ok(set.to_vec().encode(env))
 }
 
-fn at<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+init! {
+    "Elixir.Discord.SortedSet.NifBridge",
+    [
+        add,
+        append_bucket,
+        at,
+        debug,
+        empty,
+        empty,
+        find_index,
+        new,
+        remove,
+        size,
+        slice,
+        to_list,
+    ],
+    load = load
+}
+
+#[rustler::nif]
+fn at<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
@@ -240,7 +248,8 @@ fn at<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     }
 }
 
-fn slice<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn slice<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
@@ -257,7 +266,8 @@ fn slice<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     Ok(set.slice(start, amount).encode(env))
 }
 
-fn find_index<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn find_index<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
@@ -283,7 +293,8 @@ fn find_index<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     }
 }
 
-fn debug<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+#[rustler::nif]
+fn debug<'a>(env: Env<'a>, args: Vec<Term<'a>>) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SortedSetResource> = match args[0].decode() {
         Err(_) => return Ok((atoms::error(), atoms::bad_reference()).encode(env)),
         Ok(r) => r,
